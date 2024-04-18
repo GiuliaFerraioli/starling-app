@@ -1,6 +1,5 @@
 const axios = require('axios');
 require('dotenv').config();
-const app = express();
 
 const baseURL = process.env.BASE_URL;
 const accessToken = process.env.ACCESS_TOKEN;
