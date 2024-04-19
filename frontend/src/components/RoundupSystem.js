@@ -5,7 +5,10 @@ import axios from 'axios';
 const RoundupSystem = () => {
   //states to store roundup amount and transfer status
   const [amount, setAmount] = useState(0);
-  const [transferStatus, setTransferStatus] = useState(null);
+  const [mainAccountUid, setAccountUid] = useState('');
+  const [mainCategoryUid, setCategoryUid] = useState('');
+  const [mainSavingsGoalUid, setSavingsGoalUid] = useState('');
+  const [savingsGoalPhoto, setSavingsGoalPhoto] = useState(null);
 
 
   //roundup function
@@ -26,16 +29,51 @@ const RoundupSystem = () => {
     return totalAmount;
   }
 
-  const TransferClick = () => { //function for the button transfer logic
-    console.log('button clicked!');
+  const TransferClick = async (mainAccountUid, amount) => {
+    try{ //function for the button transfer logic
+
+    const accountResponse = await axios.get(`http://localhost:3001/api/savingsGoals?savingsAccountUid=${mainAccountUid}`);
+
+    const { savingsGoalUid } = accountResponse.data;
+    setSavingsGoalUid(savingsGoalUid);
+
+   //convert amount to minor units
+   //setAmount(Math.round(amount * 100));
+   console.log(amount);
+   const newData = {
+            
+    "name": "Trip to Paris",
+    "currency": "GBP",
+    "target": {
+      "currency": "GBP",
+      "minorUnits": amount
+    },
+    "base64EncodedPhoto": "string"
+  }
+   const updateAccountResponse = await axios.put(
+    `http://localhost:3001/api/savingsGoals?accountUid=${mainAccountUid}&savingsGoalUid=${savingsGoalUid}`,
+    newData
+
+  );
+
+  console.log(updateAccountResponse);
+
+    }catch (error) {
+      console.error('Error fetching savings goal: ', error);
+    }
   };
 
   useEffect(() => {
     const fetchTransactionsAndCalculateRoundup = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/transactions');
+        const accountResponse = await axios.get('http://localhost:3001/api/accounts');
+        const { accountUid, categoryUid } = accountResponse.data;
+        setAccountUid(accountUid);
+        setCategoryUid(categoryUid);
+
+        const transactionResponse = await axios.get(`http://localhost:3001/api/transactions?transAccountUid=${accountUid}&transCategoryUid=${categoryUid}`);
         //get the incoming transactions and round them up
-        const transactions = response.data;
+        const transactions = transactionResponse.data;
         const amount = calculateRoundup(transactions);
         setAmount(amount);
       } catch (error) {
@@ -49,7 +87,7 @@ const RoundupSystem = () => {
   return ( //render component
     <div>
       <p>Amount rounded this week: £{amount.toFixed(2)}</p> {/*display only two decimal places*/}
-      <button onClick={TransferClick}>Transfer</button>
+      <button onClick={() => TransferClick(mainAccountUid, amount)}>Transfer</button>
     </div>
   );
 };

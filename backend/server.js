@@ -17,18 +17,51 @@ const api = axios.create({
     baseURL: baseURL,
     headers: {
         'Accept': `application/json`,
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
     }
 })
 
 //API endpoints
 
+app.get('/api/accounts', async (req, res) => {
+    try {
+        const account = await fetchAccountDetails();
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching account' });
+    }
+});
+
 app.get('/api/transactions', async (req, res) => {
     try {
-        const transactions = await fetchTransactions();
+        const { transAccountUid, transCategoryUid } = req.query;
+        //console.log(transAccountUid);
+        const transactions = await fetchTransactions(transAccountUid, transCategoryUid);
         res.json(transactions);
     } catch (error) {
         res.status(500).json({ error: 'Error fetching transactions' });
+    }
+});
+
+app.get('/api/savingsGoals', async (req, res) => {
+    try {
+        const { savingsAccountUid } = req.query;
+        const account = await fetchSavingGoalsAccount(savingsAccountUid);
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching account' });
+    }
+});
+
+app.put('/api/savingsGoals', async (req, res) => {
+    try {
+        const { accountUid, savingsGoalUid } = req.query;
+        const { data } = req.body;
+        const account = await updateSavingGoalsAccount(accountUid, savingsGoalUid, data);
+        res.json(account);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching account', error});
     }
 });
 
@@ -53,22 +86,57 @@ const fetchAccountDetails = async () => {
 };
 
 //function to fetch all of the transactions for the current week
-const fetchTransactions = async () => {
+const fetchTransactions = async (accountUid, categoryUid) => {
     try {
-        const { accountUid, categoryUid } = await fetchAccountDetails();
-
-        if (!accountUid || !categoryUid) {
-            throw new Error('Error fetching one or more account details');
-        }
-
         const changeSince = getStartOfWeek();
         const response = await api.get(`${baseURL}/api/v2/feed/account/${accountUid}/category/${categoryUid}?changesSince=${changeSince}`);
 
         return response.data.feedItems;
     } catch (error) {
         console.error('Error fetching transactions: ', error);
+        throw error;
     }
 }
+
+const fetchSavingGoalsAccount = async (accountUid) => {
+    try {
+
+        const response = await api.get(`${baseURL}/api/v2/account/${accountUid}/savings-goals`);
+
+
+                const savingsGoalAccount = response.data.savingsGoalList[0];
+                const { savingsGoalUid, name, target, totalSaved, savedPercentage, state } = savingsGoalAccount;
+        
+                return {
+                    savingsGoalUid,
+                    name,
+                    target,
+                    totalSaved,
+                    savedPercentage,
+                    state
+                };
+
+    } catch (error) {
+        console.error('Error fetching saving goals account details:', error);
+        throw error;
+    }
+}
+
+const updateSavingGoalsAccount = async (accountUid, savingsGoalUid, data) => {
+    try {
+        const response = await api.put(`${baseURL}/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}`, 
+        data
+    );
+
+        
+        return response.data;
+    } catch (error) {
+        console.error('Error updating saving goals account details:', error);
+        throw error;
+    }
+}
+
+
 
 const getStartOfWeek = () => {
     const today = new Date();
