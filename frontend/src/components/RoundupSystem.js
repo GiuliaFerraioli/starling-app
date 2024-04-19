@@ -1,34 +1,57 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
+import axios from 'axios';
+
 
 const RoundupSystem = () => {
-    let [amount, setAmount] = useState(0); //state to store the roundup amount
-     amount = 10.558;
+  //states to store roundup amount and transfer status
+  const [amount, setAmount] = useState(0);
+  const [transferStatus, setTransferStatus] = useState(null);
 
-    const fetchAmount = async () => { //function to fetch the roundup amount 
+
+  //roundup function
+  const calculateRoundup = (transactions) => {
+    let totalAmount = 0;
+
+    transactions.forEach((transaction) => {
+
+      //we only want to consider transfer in the account, not going out
+      if (transaction.direction == "IN") {
+        //convert the units in currency format, roundup the value and substract it to the original amount to get the difference
+        const amount = Math.ceil(transaction.amount.minorUnits / 100) - (transaction.amount.minorUnits / 100);
+
+        totalAmount += amount;
+      }
+    });
+
+    return totalAmount;
+  }
+
+  const TransferClick = () => { //function for the button transfer logic
+    console.log('button clicked!');
+  };
+
+  useEffect(() => {
+    const fetchTransactionsAndCalculateRoundup = async () => {
       try {
-        const response = await fetch('/api/roundup'); //api request to fetch the roundup amount
-        const data = await response.json;
-
-        setAmount(data.amount); //update the state for the roundup amount
-    }catch (error) {
-        console.error('Error fetching amount! ', error);
-    }
-};
-
-    const TransferClick = () => { //function for the button transfer logic
-      console.log('button clicked!');  
+        const response = await axios.get('http://localhost:3001/api/transactions');
+        //get the incoming transactions and round them up
+        const transactions = response.data;
+        const amount = calculateRoundup(transactions);
+        setAmount(amount);
+      } catch (error) {
+        console.error('Error fetching transactions: ', error);
+      }
     };
 
-    useEffect(() => {
-        fetchAmount(); //call the function when component is initialised
-    },[]);
+    fetchTransactionsAndCalculateRoundup();//call the function when component is initialised
+  }, []);
 
-    return ( //render component
-        <div>
-          <p>Amount rounded this week: £{amount.toFixed(2)}</p> {/*display only two decimal places*/}
-          <button onClick={TransferClick}>Transfer</button>
-        </div>
-    );
+  return ( //render component
+    <div>
+      <p>Amount rounded this week: £{amount.toFixed(2)}</p> {/*display only two decimal places*/}
+      <button onClick={TransferClick}>Transfer</button>
+    </div>
+  );
 };
 
 export default RoundupSystem;
