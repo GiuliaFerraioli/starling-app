@@ -57,11 +57,22 @@ app.get('/api/savingsGoals', async (req, res) => {
 app.put('/api/savingsGoals', async (req, res) => {
     try {
         const { accountUid, savingsGoalUid } = req.query;
-        const { data } = req.body;
-        const account = await updateSavingGoalsAccount(accountUid, savingsGoalUid, data);
-        res.json(account);
+        const {
+            data = {
+                name: 'Trip to Paris',
+                currency: 'GBP',
+                target: {
+                    currency: 'GBP',
+                    minorUnits: 0
+                },
+                base64EncodedPhoto: 'string'
+            }
+        } = req.query;
+
+        const updatedSavingsGoal = await updateSavingGoalsAccount(accountUid, savingsGoalUid, data);
+        res.json(updatedSavingsGoal);
     } catch (error) {
-        res.status(500).json({ error: 'Error fetching account', error});
+        res.status(500).json({ error: 'Error fetching account', error });
     }
 });
 
@@ -104,17 +115,17 @@ const fetchSavingGoalsAccount = async (accountUid) => {
         const response = await api.get(`${baseURL}/api/v2/account/${accountUid}/savings-goals`);
 
 
-                const savingsGoalAccount = response.data.savingsGoalList[0];
-                const { savingsGoalUid, name, target, totalSaved, savedPercentage, state } = savingsGoalAccount;
-        
-                return {
-                    savingsGoalUid,
-                    name,
-                    target,
-                    totalSaved,
-                    savedPercentage,
-                    state
-                };
+        const savingsGoalAccount = response.data.savingsGoalList[0];
+        const { savingsGoalUid, name, target, totalSaved, savedPercentage, state } = savingsGoalAccount;
+
+        return {
+            savingsGoalUid,
+            name,
+            target,
+            totalSaved,
+            savedPercentage,
+            state
+        };
 
     } catch (error) {
         console.error('Error fetching saving goals account details:', error);
@@ -124,11 +135,10 @@ const fetchSavingGoalsAccount = async (accountUid) => {
 
 const updateSavingGoalsAccount = async (accountUid, savingsGoalUid, data) => {
     try {
-        const response = await api.put(`${baseURL}/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}`, 
-        data
-    );
 
-        
+        const response = await api.put(`${baseURL}/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}`,
+            data);
+
         return response.data;
     } catch (error) {
         console.error('Error updating saving goals account details:', error);

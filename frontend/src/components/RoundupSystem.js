@@ -39,20 +39,18 @@ const RoundupSystem = () => {
 
    //convert amount to minor units
    //setAmount(Math.round(amount * 100));
-   console.log(amount);
-   const newData = {
-            
-    "name": "Trip to Paris",
-    "currency": "GBP",
-    "target": {
-      "currency": "GBP",
-      "minorUnits": amount
+
+   const data = {
+    name: 'Trip to Paris',
+    currency: 'GBP',
+    target: {
+        currency: 'GBP',
+        minorUnits: amount
     },
-    "base64EncodedPhoto": "string"
-  }
+    base64EncodedPhoto: 'string'
+   }
    const updateAccountResponse = await axios.put(
-    `http://localhost:3001/api/savingsGoals?accountUid=${mainAccountUid}&savingsGoalUid=${savingsGoalUid}`,
-    newData
+    `http://localhost:3001/api/savingsGoals?accountUid=${mainAccountUid}&savingsGoalUid=${savingsGoalUid}`, data
 
   );
 
