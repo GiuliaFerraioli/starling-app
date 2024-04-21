@@ -23,7 +23,6 @@ const api = axios.create({
 })
 
 //API endpoints
-
 app.get('/api/accounts', async (req, res) => {
     try {
         const account = await fetchAccountDetails();
@@ -36,7 +35,6 @@ app.get('/api/accounts', async (req, res) => {
 app.get('/api/transactions', async (req, res) => {
     try {
         const { transAccountUid, transCategoryUid } = req.query;
-        //console.log(transAccountUid);
         const transactions = await fetchTransactions(transAccountUid, transCategoryUid);
         res.json(transactions);
     } catch (error) {
@@ -57,13 +55,14 @@ app.get('/api/savingsGoals', async (req, res) => {
 app.put('/api/savingsGoals', async (req, res) => {
     try {
         const { accountUid, savingsGoalUid } = req.query;
+        const amount = req.query.amount; 
         const {
             data = {
                 name: 'Trip to Paris',
                 currency: 'GBP',
                 target: {
                     currency: 'GBP',
-                    minorUnits: 0
+                    minorUnits: amount
                 },
                 base64EncodedPhoto: 'string'
             }
@@ -77,16 +76,13 @@ app.put('/api/savingsGoals', async (req, res) => {
 });
 
 //functions
-
 //function to fetch the account details
 const fetchAccountDetails = async () => {
     try {
         const response = await api.get(`${baseURL}/api/v2/accounts`);
-
         if (response.data.length === 0) {
             throw new Error('No account details found');
         }
-
         //we assume its the first account for this specific task
         const account = response.data.accounts[0];
         return { accountUid: account.accountUid, categoryUid: account.defaultCategory };
@@ -101,7 +97,6 @@ const fetchTransactions = async (accountUid, categoryUid) => {
     try {
         const changeSince = getStartOfWeek();
         const response = await api.get(`${baseURL}/api/v2/feed/account/${accountUid}/category/${categoryUid}?changesSince=${changeSince}`);
-
         return response.data.feedItems;
     } catch (error) {
         console.error('Error fetching transactions: ', error);
@@ -109,15 +104,12 @@ const fetchTransactions = async (accountUid, categoryUid) => {
     }
 }
 
+//function to fetch the first saving account
 const fetchSavingGoalsAccount = async (accountUid) => {
     try {
-
         const response = await api.get(`${baseURL}/api/v2/account/${accountUid}/savings-goals`);
-
-
         const savingsGoalAccount = response.data.savingsGoalList[0];
         const { savingsGoalUid, name, target, totalSaved, savedPercentage, state } = savingsGoalAccount;
-
         return {
             savingsGoalUid,
             name,
@@ -126,7 +118,6 @@ const fetchSavingGoalsAccount = async (accountUid) => {
             savedPercentage,
             state
         };
-
     } catch (error) {
         console.error('Error fetching saving goals account details:', error);
         throw error;
@@ -135,10 +126,7 @@ const fetchSavingGoalsAccount = async (accountUid) => {
 
 const updateSavingGoalsAccount = async (accountUid, savingsGoalUid, data) => {
     try {
-
-        const response = await api.put(`${baseURL}/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}`,
-            data);
-
+        const response = await api.put(`${baseURL}/api/v2/account/${accountUid}/savings-goals/${savingsGoalUid}`,data);
         return response.data;
     } catch (error) {
         console.error('Error updating saving goals account details:', error);
@@ -146,14 +134,10 @@ const updateSavingGoalsAccount = async (accountUid, savingsGoalUid, data) => {
     }
 }
 
-
-
 const getStartOfWeek = () => {
     const today = new Date();
     let day = today.getDay(); //from Sunday = 0 to Saturday = 6
-
     day = (day == 0) ? 6 : day - 1; //we can consider Monday as the first day of the week
-
     //calculate difference and set the date to the start of the week
     const difference = today.getDate() - day;
     const startOfWeek = new Date(today.setDate(difference));

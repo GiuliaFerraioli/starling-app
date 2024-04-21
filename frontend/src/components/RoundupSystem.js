@@ -8,8 +8,6 @@ const RoundupSystem = () => {
   const [mainAccountUid, setAccountUid] = useState('');
   const [mainCategoryUid, setCategoryUid] = useState('');
   const [mainSavingsGoalUid, setSavingsGoalUid] = useState('');
-  const [savingsGoalPhoto, setSavingsGoalPhoto] = useState(null);
-
 
   //roundup function
   const calculateRoundup = (transactions) => {
@@ -19,9 +17,9 @@ const RoundupSystem = () => {
 
       //we only want to consider transfer in the account, not going out
       if (transaction.direction == "IN") {
+
         //convert the units in currency format, roundup the value and substract it to the original amount to get the difference
         const amount = Math.ceil(transaction.amount.minorUnits / 100) - (transaction.amount.minorUnits / 100);
-
         totalAmount += amount;
       }
     });
@@ -29,39 +27,36 @@ const RoundupSystem = () => {
     return totalAmount;
   }
 
+  //function called from the button on the main page to transfer rounded amount to a saving goals account
   const TransferClick = async (mainAccountUid, amount) => {
-    try{ //function for the button transfer logic
+    try { 
 
-    const accountResponse = await axios.get(`http://localhost:3001/api/savingsGoals?savingsAccountUid=${mainAccountUid}`);
+      const accountResponse = await axios.get(`http://localhost:3001/api/savingsGoals?savingsAccountUid=${mainAccountUid}`);
+      const { savingsGoalUid } = accountResponse.data;
+      setSavingsGoalUid(savingsGoalUid);
 
-    const { savingsGoalUid } = accountResponse.data;
-    setSavingsGoalUid(savingsGoalUid);
+      //convert amount to minor units
+      const newMinorUnits = Math.round(amount * 100);
 
-   //convert amount to minor units
-   //setAmount(Math.round(amount * 100));
-
-   const data = {
-    name: 'Trip to Paris',
-    currency: 'GBP',
-    target: {
+      const data = {
+        name: 'Trip to Paris',
         currency: 'GBP',
-        minorUnits: amount
-    },
-    base64EncodedPhoto: 'string'
-   }
-   const updateAccountResponse = await axios.put(
-    `http://localhost:3001/api/savingsGoals?accountUid=${mainAccountUid}&savingsGoalUid=${savingsGoalUid}`, data
+        target: {
+          currency: 'GBP',
+          minorUnits: newMinorUnits
+        },
+        base64EncodedPhoto: 'string'
+      }
+      const updateAccountResponse = await axios.put(
+        `http://localhost:3001/api/savingsGoals?accountUid=${mainAccountUid}&savingsGoalUid=${savingsGoalUid}&amount=${newMinorUnits}`, data);
 
-  );
-
-  console.log(updateAccountResponse);
-
-    }catch (error) {
+    } catch (error) {
       console.error('Error fetching savings goal: ', error);
     }
   };
 
   useEffect(() => {
+    //function to display the rounded amount on the page
     const fetchTransactionsAndCalculateRoundup = async () => {
       try {
         const accountResponse = await axios.get('http://localhost:3001/api/accounts');
@@ -79,7 +74,7 @@ const RoundupSystem = () => {
       }
     };
 
-    fetchTransactionsAndCalculateRoundup();//call the function when component is initialised
+    fetchTransactionsAndCalculateRoundup();//function called when component is initialised
   }, []);
 
   return ( //render component
